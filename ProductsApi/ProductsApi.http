@@ -1,0 +1,7 @@
+# @ProductsApi_HostAddress = http://localhost:5153
+ @ProductsApi_HostAddress = https://localhost:7204
+
+GET {{ProductsApi_HostAddress}}/api/products/health
+Accept: application/json
+
+###

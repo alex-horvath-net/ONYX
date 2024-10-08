@@ -1,7 +1,9 @@
-﻿using Common.Dommain;
+﻿using System.Text.Json;
+using Common.Dommain;
 using Common.Infrastucture.Data;
 using Microsoft.Data.SqlClient;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Polly;
 using Polly.CircuitBreaker;
 using Polly.Retry;
@@ -29,14 +31,48 @@ public class Repository(AppDB dB) : IRepository {
     };
 }
 
+public class CachedRepository : IRepository {
+    private readonly IRepository innerRepository;
+    private readonly IDistributedCache cache;
+    private readonly TimeSpan cacheExpiration = TimeSpan.FromMinutes(5);
+
+    public CachedRepository(IRepository innerRepository, IDistributedCache cache) {
+        this.innerRepository = innerRepository;
+        this.cache = cache;
+    }
+
+    public async Task<List<Product>> ReadProducts(ReadProductsRequest request, CancellationToken token) {
+        var cacheKey = $"Products_{request.Colour?.ToLower()}";
+
+        // Check if the data is already in the cache
+        var cachedData = await cache.GetStringAsync(cacheKey, token);
+        if (cachedData != null) {
+            return JsonSerializer.Deserialize<List<Product>>(cachedData);
+        }
+
+        // If not in the cache, retrieve from the repository
+        var products = await innerRepository.ReadProducts(request, token);
+
+        // Serialize and cache the result
+        var serializedData = JsonSerializer.Serialize(products);
+        var cacheOptions = new DistributedCacheEntryOptions {
+            AbsoluteExpirationRelativeToNow = cacheExpiration
+        };
+
+        await cache.SetStringAsync(cacheKey, serializedData, cacheOptions, token);
+
+        return products;
+    }
+}
+
 public class ResilientRepository : IRepository {
 
     private readonly AsyncRetryPolicy retryPolicy;
     private readonly AsyncCircuitBreakerPolicy circuitBreakerPolicy;
-    private readonly IRepository repository;
+    private readonly IRepository innerRepository;
 
     public ResilientRepository(IRepository repository) {
-        this.repository = repository;
+        this.innerRepository = repository;
         // Define the retry policy: 3 retries, with exponential backoff starting from 1 second
         retryPolicy = Policy
             .Handle<DbUpdateException>()                 // Entity Framework specific exceptions
@@ -59,7 +95,7 @@ public class ResilientRepository : IRepository {
     public Task<List<Product>> ReadProducts(ReadProductsRequest request, CancellationToken token) {
         return retryPolicy.ExecuteAsync(() => {
             return circuitBreakerPolicy.ExecuteAsync(() => {
-                return repository.ReadProducts(request, token);
+                return innerRepository.ReadProducts(request, token);
             });
         });
     }

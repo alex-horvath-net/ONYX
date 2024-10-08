@@ -2,6 +2,7 @@
 using Common.Infrastucture.Data;
 using FluentAssertions;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Caching.Distributed;
 using Moq;
 using ProductServices.ReadProducts;
 using Tests.IntegrationTests;
@@ -20,7 +21,13 @@ public class RepositoryTests {
         db.Seed();
 
         var repository = new Repository(db);
-        var resilientRepository = new ResilientRepository(repository);
+        var cache = new Mock<IDistributedCache>();
+        cache
+            .Setup(c => c.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+            .ReturnsAsync((string)null); // Cache miss
+
+        var cachedRepository = new CachedRepository(repository, cache.Object);
+        var resilientRepository = new ResilientRepository(cachedRepository);
 
         // Act
         var response = await resilientRepository.ReadProducts(request, token);

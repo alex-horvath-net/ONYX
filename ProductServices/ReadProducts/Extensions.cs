@@ -1,4 +1,6 @@
 ﻿using FluentValidation;
+using Microsoft.Extensions.Caching.Distributed;
+using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
 namespace ProductServices.ReadProducts;
@@ -12,27 +14,15 @@ public static class Extensions {
             .AddScoped<IValidator<ReadProductsRequest>, FluentValidator>();
 
         services
+            .AddDistributedMemoryCache()
             .AddScoped<Repository>()
             .AddScoped<IRepository>(sp => {
+                var cache = sp.GetRequiredService<IDistributedCache>();
                 var repository = sp.GetRequiredService<Repository>();
-                return new ResilientRepository(repository);
-        });
+                var cachedRepository = new CachedRepository(repository, cache);
+                return new ResilientRepository(cachedRepository);
+            });
 
         return services;
     }
 }
-// Product Service creates a Product
-// Product Service publishes a ProductCreated
-//      Product Service accept validation requests from Order Service
-
-// Order Service listess for ProductCreated
-//      Order Service calls the Product Service to validate the details
-// Order Service creates Order with status as Pending
-// Order Service publishes a OrderPlaced 
-
-// Payment Service listess for OrderPlaced
-// Payment Service processes the payment
-// Payment Service publishes a PaymentProcessed  
-
-// Order Service listess for PaymentProcessed 
-// Order Service updates the order status to completed 

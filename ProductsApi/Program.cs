@@ -14,19 +14,6 @@ builder.Services
     .AddCreateProductService()
     .AddReadProductsService();
 
-//builder.Services
-//    .AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddJwtBearer(options => {
-//        options.Authority = "https://your-auth-server"; // Mock authority for example
-//        options.TokenValidationParameters = new TokenValidationParameters {
-//            ValidateIssuerSigningKey = true,
-//            IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes("YourSecureKey")),
-//            ValidateIssuer = false,
-//            ValidateAudience = false
-//        };
-//    });
-
-
 var azureAdSettings = builder.Configuration.GetSection("AzureAd");
 
 builder.Services
@@ -43,7 +30,6 @@ builder.Services
             // The signing key is managed by Azure AD, so you don't need to configure it manually
         };
 
-        // Ensure that the token is sent over HTTPS
         options.RequireHttpsMetadata = true;
     });
 builder.Services.AddAuthorization();

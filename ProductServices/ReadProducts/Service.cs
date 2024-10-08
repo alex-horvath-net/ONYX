@@ -6,6 +6,8 @@ namespace ProductServices.ReadProducts;
 
 public class Service(IValidator validator, IRepository repository) : IReadProductsService {
     public async Task<ReadProductsResponse> Execute(ReadProductsRequest request, CancellationToken token) {
+        // This method responsibility to manage the business workflow, but it is 100% technology agnostic.
+        // It does not know how the data is stored or how the data is validated.
         token.ThrowIfCancellationRequested();
         var response = new ReadProductsResponse();
 

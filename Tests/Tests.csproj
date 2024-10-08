@@ -22,7 +22,6 @@
 
   <ItemGroup>
     <ProjectReference Include="..\Common\Common.csproj" />
-    <ProjectReference Include="..\Domain\Common.csproj" />
     <ProjectReference Include="..\ProductsApi\ProductsApi.csproj" />
     <ProjectReference Include="..\ProductServices\ProductServices.csproj" />
   </ItemGroup>

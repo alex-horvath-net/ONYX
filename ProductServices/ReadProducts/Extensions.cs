@@ -17,10 +17,11 @@ public static class Extensions {
             .AddDistributedMemoryCache()
             .AddScoped<Repository>()
             .AddScoped<IRepository>(sp => {
-                var cache = sp.GetRequiredService<IDistributedCache>();
                 var repository = sp.GetRequiredService<Repository>();
+                var cache = sp.GetRequiredService<IDistributedCache>();
                 var cachedRepository = new CachedRepository(repository, cache);
-                return new ResilientRepository(cachedRepository);
+                var resilientRepository  = new ResilientRepository(repository);
+                return resilientRepository;
             });
 
         return services;

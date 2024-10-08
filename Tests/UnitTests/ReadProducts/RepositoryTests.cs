@@ -22,9 +22,10 @@ public class RepositoryTests {
 
         var repository = new Repository(db);
         var cache = new Mock<IDistributedCache>();
+        
         cache
-            .Setup(c => c.GetStringAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
-            .ReturnsAsync((string)null); // Cache miss
+           .Setup(c => c.GetAsync(It.IsAny<string>(), It.IsAny<CancellationToken>()))
+           .ReturnsAsync((byte[]?)null); // Cache miss
 
         var cachedRepository = new CachedRepository(repository, cache.Object);
         var resilientRepository = new ResilientRepository(cachedRepository);
